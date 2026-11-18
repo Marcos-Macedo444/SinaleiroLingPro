@@ -1,4 +1,4 @@
-# Central de Chamados — Helpdesk Web
+# Sinaleiro — Helpdesk Web
 
 Ferramenta web para abertura e acompanhamento de chamados de reparo de equipamentos
 (computadores, impressoras etc.), feita em **Python (Flask)**, orientada a objetos e
@@ -60,14 +60,20 @@ Herança: todos os repositórios estendem `Repository`. Encapsulamento: regras c
 
 ## Interface
 
-- O status é mostrado como um **semáforo** (caixa com três lâmpadas, acesa só a do status), sempre acompanhado do texto. Assim a informação não depende só da cor.
-- A etiqueta de patrimônio aparece como uma plaqueta metálica, igual à colada no equipamento.
-- Movimento com função:
-  - transições entre páginas (View Transitions API);
-  - lâmpadas que acendem com cintilação de lâmpada real;
-  - o admin vê a cor nova na linha antes de salvar;
-  - a linha alterada ou criada recebe destaque;
-  - o chamado cancelado sai da lista;
-  - avisos com contagem regressiva, que pausa no hover;
-  - semáforo piscando amarelo quando a lista está vazia.
-- Responsiva até celular, com foco de teclado visível, respeito a `prefers-reduced-motion` e proteção CSRF em todos os formulários.
+A identidade visual vem da **sinalização viária**, o mundo do nome Sinaleiro:
+
+- **Tipografia Overpass**, derivada da *Highway Gothic*, a fonte das placas de estrada.
+- **Asfalto e faixa de pista** no topo e na tela de login.
+- **Botões como placas**: o azul de orientação com filete branco interno; ações destrutivas em vermelho de regulamentação.
+- **Semáforo como indicador de status**, sempre com o texto ao lado (a informação não depende só da cor).
+- **Etiqueta de patrimônio** desenhada como a plaqueta metálica do equipamento.
+- **Logotipo**: os pingos dos dois "i" de Sinaleiro são lâmpadas.
+
+### Movimento
+
+- **Login**: um grupo focal realista (caixa, palas e lentes de LED) roda o ciclo verde → amarelo → vermelho. A legenda acende junto, e a faixa da pista anda no verde, freia no amarelo e para no vermelho. Ao entrar, o sinal abre no verde; com senha errada, o vermelho pisca.
+- **Navegação** com View Transitions: a página troca suavemente e o marcador das abas desliza.
+- **Lista**: as lâmpadas ligam com a cintilação de lâmpada real. O admin vê a cor nova antes de salvar, a linha alterada ou criada ganha destaque e o chamado cancelado sai da fila.
+- **Avisos** com contagem regressiva tracejada, que pausa no hover.
+- **Estado vazio** com o amarelo piscando, como semáforo de madrugada.
+- Respeita `prefers-reduced-motion`. É responsiva até o celular, tem foco de teclado visível e usa CSRF em todos os formulários.

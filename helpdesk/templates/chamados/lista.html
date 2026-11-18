@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import status_tag, etiqueta, semaforo, csrf with context %}
-{% block titulo %}Chamados · Central de Chamados{% endblock %}
+{% block titulo %}Chamados · Sinaleiro{% endblock %}
 {% block conteudo %}
 {% set admin = usuario_logado.is_admin %}
 {% set voltar = request.full_path.rstrip('?') %}

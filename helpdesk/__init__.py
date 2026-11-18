@@ -1,4 +1,4 @@
-"""Central de Chamados — helpdesk web para abertura e acompanhamento de chamados."""
+"""Sinaleiro — helpdesk web para abertura e acompanhamento de chamados."""
 from __future__ import annotations
 
 import os

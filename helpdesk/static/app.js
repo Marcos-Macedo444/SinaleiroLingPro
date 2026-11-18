@@ -22,6 +22,23 @@
   const focoInicial = document.querySelector("[data-foco-inicial]");
   if (focoInicial && window.matchMedia("(min-width: 821px)").matches) focoInicial.focus({ preventScroll: true });
 
+  /* ---------- Login: sinal verde ao entrar, vermelho no erro ------------- */
+  const telaLogin = document.querySelector("[data-login]");
+  if (telaLogin) {
+    if (telaLogin.classList.contains("negado")) {
+      setTimeout(() => telaLogin.classList.remove("negado"), reduzido ? 0 : 2600);
+    }
+    const formLogin = telaLogin.querySelector("form");
+    formLogin.addEventListener("submit", (ev) => {
+      if (formLogin.dataset.liberado) return;
+      ev.preventDefault();
+      formLogin.dataset.liberado = "1";
+      telaLogin.classList.remove("negado");
+      telaLogin.classList.add("liberado");
+      setTimeout(() => formLogin.submit(), reduzido ? 0 : 420);
+    });
+  }
+
   /* ---------- Mostrar / ocultar senha ------------------------------------ */
   document.querySelectorAll("[data-mostrar-senha]").forEach((btn) => {
     const input = document.getElementById(btn.getAttribute("aria-controls"));

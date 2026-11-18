@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_macros.html" import status_tag, csrf with context %}
-{% block titulo %}Abrir chamado · Central de Chamados{% endblock %}
+{% block titulo %}Abrir chamado · Sinaleiro{% endblock %}
 {% block conteudo %}
 {% macro erro(campo) -%}
   {% if erros.get(campo) %}<p class="erro-campo" id="erro-{{ campo }}">{{ erros[campo] }}</p>{% endif %}

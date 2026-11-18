@@ -1,13 +1,13 @@
-{% from "_macros.html" import semaforo, csrf with context %}
+{% from "_macros.html" import marca, csrf with context %}
 <!doctype html>
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block titulo %}Central de Chamados{% endblock %}</title>
+  <title>{% block titulo %}Sinaleiro{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,300..900;1,700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='icone.svg') }}" type="image/svg+xml">
 </head>
@@ -17,10 +17,7 @@
   {% if usuario_logado %}
   <header class="topo">
     <div class="topo-interno">
-      <a class="marca" href="{{ url_for('chamados.listar') }}">
-        {{ semaforo(Status.ABERTO, 'mini marca-semaforo') }}
-        <span>Central de Chamados</span>
-      </a>
+      <a class="marca" href="{{ url_for('chamados.listar') }}" aria-label="Sinaleiro, ir para os chamados">{{ marca() }}</a>
       <nav class="nav" aria-label="Principal">
         <a href="{{ url_for('chamados.listar') }}" {% if request.endpoint == 'chamados.listar' %}aria-current="page"{% endif %}>Chamados</a>
         <a href="{{ url_for('chamados.novo') }}" {% if request.endpoint == 'chamados.novo' %}aria-current="page"{% endif %}>Abrir chamado</a>

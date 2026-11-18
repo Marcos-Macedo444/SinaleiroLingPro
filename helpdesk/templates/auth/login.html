@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block titulo %}Entrar · Central de Chamados{% endblock %}
+{% from "_macros.html" import marca, sinal_grande, csrf with context %}
+{% block titulo %}Entrar · Sinaleiro{% endblock %}
 {% block body_class %}tela-login{% endblock %}
 {% block conteudo %}
-<div class="login">
+<div class="login{% if erro %} negado{% endif %}" data-login>
   <section class="login-painel" aria-labelledby="painel-titulo">
+    <span class="faixa-pista" aria-hidden="true"></span>
     <div class="login-painel-interno">
-      <p class="login-marca">Central de Chamados</p>
-      <div class="semaforo-grande" aria-hidden="true">
-        <i class="lamp vermelho"></i><i class="lamp amarelo"></i><i class="lamp verde"></i>
-      </div>
-      <h2 id="painel-titulo" class="painel-titulo">Cada chamado tem uma cor.<br>Você bate o olho e sabe em que pé está.</h2>
+      <p class="login-marca">{{ marca('wordmark-claro') }}</p>
+      {{ sinal_grande() }}
+      <h2 id="painel-titulo" class="painel-titulo">Todo chamado anda como o trânsito: abre no verde, passa pelo amarelo e fecha no vermelho.</h2>
       <dl class="legenda">
         <div data-cor="verde">
           <dt><i class="ponto verde"></i>Em aberto</dt>
@@ -31,7 +31,7 @@
     <form class="login-form" method="post" novalidate data-carregando>
       {{ csrf() }}
       <h1>Entrar</h1>
-      <p class="sub">Use o login e a senha fornecidos pela TI.</p>
+      <p class="sub">Use o login e a senha que a TI entregou para você.</p>
 
       {% if erro %}
       <p class="erro-form" role="alert">{{ erro }}</p>

@@ -16,3 +16,20 @@
 {% macro csrf() -%}
 <input type="hidden" name="_csrf" value="{{ csrf_token() }}">
 {%- endmacro %}
+
+{# Logotipo: os pingos dos dois "i" são lâmpadas do sinal. #}
+{% macro marca(classe='') -%}
+<span class="wordmark {{ classe }}"><span class="sr">Sinaleiro</span><span aria-hidden="true">S<b class="i i1">ı</b>nale<b class="i i2">ı</b>ro</span></span>
+{%- endmacro %}
+
+{# Grupo focal realista: caixa, palas e lentes de LED. #}
+{% macro sinal_grande() -%}
+<div class="sinal" aria-hidden="true">
+  <span class="sinal-suporte"></span>
+  <div class="sinal-caixa">
+    <span class="foco vermelho"><i class="lente"></i></span>
+    <span class="foco amarelo"><i class="lente"></i></span>
+    <span class="foco verde"><i class="lente"></i></span>
+  </div>
+</div>
+{%- endmacro %}
