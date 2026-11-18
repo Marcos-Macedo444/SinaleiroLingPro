@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% from "_macros.html" import semaforo with context %}
+{% block titulo %}Erro {{ codigo }} · Central de Chamados{% endblock %}
+{% block conteudo %}
+<div class="pagina estreita">
+  <div class="vazio">
+    {{ semaforo(Status.FINALIZADO, 'grande-apagado') }}
+    <h2>{{ 'Página não encontrada' if codigo == 404 else 'Não foi possível concluir' }}</h2>
+    <p>{{ mensagem }}</p>
+    <a class="botao secundario" href="{{ url_for('chamados.listar') }}">Ir para os chamados</a>
+  </div>
+</div>
+{% endblock %}

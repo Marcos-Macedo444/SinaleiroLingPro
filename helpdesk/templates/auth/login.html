@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar · Central de Chamados{% endblock %}
+{% block body_class %}tela-login{% endblock %}
+{% block conteudo %}
+<div class="login">
+  <section class="login-painel" aria-labelledby="painel-titulo">
+    <div class="login-painel-interno">
+      <p class="login-marca">Central de Chamados</p>
+      <div class="semaforo-grande" aria-hidden="true">
+        <i class="lamp vermelho"></i><i class="lamp amarelo"></i><i class="lamp verde"></i>
+      </div>
+      <h2 id="painel-titulo" class="painel-titulo">Cada chamado tem uma cor.<br>Você bate o olho e sabe em que pé está.</h2>
+      <dl class="legenda">
+        <div data-cor="verde">
+          <dt><i class="ponto verde"></i>Em aberto</dt>
+          <dd>Registrado e aguardando a equipe de TI.</dd>
+        </div>
+        <div data-cor="amarelo">
+          <dt><i class="ponto amarelo"></i>Em andamento</dt>
+          <dd>Um técnico já está cuidando do equipamento.</dd>
+        </div>
+        <div data-cor="vermelho">
+          <dt><i class="ponto vermelho"></i>Finalizado</dt>
+          <dd>Reparo concluído e chamado encerrado.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+  <section class="login-form-area">
+    <form class="login-form" method="post" novalidate data-carregando>
+      {{ csrf() }}
+      <h1>Entrar</h1>
+      <p class="sub">Use o login e a senha fornecidos pela TI.</p>
+
+      {% if erro %}
+      <p class="erro-form" role="alert">{{ erro }}</p>
+      {% endif %}
+
+      <div class="campo">
+        <label for="login">Login</label>
+        <input id="login" name="login" type="text" autocomplete="username" required data-foco-inicial value="{{ login }}">
+      </div>
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <div class="senha-wrap">
+          <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+          <button type="button" class="mostrar-senha" data-mostrar-senha aria-controls="senha" aria-pressed="false">Mostrar</button>
+        </div>
+      </div>
+      <button class="botao primario largo" type="submit">Entrar</button>
+
+      <details class="acessos-teste">
+        <summary>Acessos de demonstração</summary>
+        <table>
+          <tr><th scope="row">Administrador</th><td><code>admin</code></td><td><code>admin123</code></td></tr>
+          <tr><th scope="row">Usuário comum</th><td><code>usuario</code></td><td><code>usuario123</code></td></tr>
+        </table>
+      </details>
+    </form>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% from "_macros.html" import semaforo, csrf with context %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Central de Chamados{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,300..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='icone.svg') }}" type="image/svg+xml">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="pular" href="#conteudo">Pular para o conteúdo</a>
+
+  {% if usuario_logado %}
+  <header class="topo">
+    <div class="topo-interno">
+      <a class="marca" href="{{ url_for('chamados.listar') }}">
+        {{ semaforo(Status.ABERTO, 'mini marca-semaforo') }}
+        <span>Central de Chamados</span>
+      </a>
+      <nav class="nav" aria-label="Principal">
+        <a href="{{ url_for('chamados.listar') }}" {% if request.endpoint == 'chamados.listar' %}aria-current="page"{% endif %}>Chamados</a>
+        <a href="{{ url_for('chamados.novo') }}" {% if request.endpoint == 'chamados.novo' %}aria-current="page"{% endif %}>Abrir chamado</a>
+      </nav>
+      <div class="conta">
+        <span class="avatar" aria-hidden="true">{{ usuario_logado.iniciais }}</span>
+        <span class="conta-info">
+          <strong>{{ usuario_logado.nome }}</strong>
+          <small>{{ usuario_logado.perfil.rotulo }}</small>
+        </span>
+        <form method="post" action="{{ url_for('auth.logout') }}">
+          {{ csrf() }}
+          <button class="botao fantasma pequeno" type="submit">Sair</button>
+        </form>
+      </div>
+    </div>
+  </header>
+  {% endif %}
+
+  {% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
+    <div class="avisos" role="status" aria-live="polite">
+      {% for categoria, msg in mensagens %}
+      <div class="aviso aviso-{{ categoria }}" style="--n: {{ loop.index0 }}">
+        <i class="aviso-luz" aria-hidden="true"></i>
+        <span class="aviso-texto">{{ msg }}</span>
+        <button type="button" class="aviso-fechar" aria-label="Fechar aviso" data-fechar-aviso>&times;</button>
+        <i class="aviso-tempo" aria-hidden="true"></i>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <main id="conteudo">
+    {% block conteudo %}{% endblock %}
+  </main>
+
+  <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+</body>
+</html>

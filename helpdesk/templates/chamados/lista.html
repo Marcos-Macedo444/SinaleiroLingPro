@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_tag, etiqueta, semaforo, csrf with context %}
+{% block titulo %}Chamados · Central de Chamados{% endblock %}
+{% block conteudo %}
+{% set admin = usuario_logado.is_admin %}
+{% set voltar = request.full_path.rstrip('?') %}
+{% set total = contagem.values()|sum %}
+
+<div class="pagina">
+  <div class="cabecalho">
+    <div>
+      <h1>{{ 'Todos os chamados' if admin else 'Meus chamados' }}</h1>
+      <p class="sub">
+        {% if admin %}Chamados de todos os setores, do mais recente para o mais antigo.
+        {% else %}Tudo o que você abriu, do mais recente para o mais antigo.{% endif %}
+      </p>
+    </div>
+    <a class="botao primario" href="{{ url_for('chamados.novo') }}">Abrir chamado</a>
+  </div>
+
+  {# Filtro por status com contagem — funciona como resumo do painel #}
+  {% macro link_status(valor, rotulo, qtd, cor=None) -%}
+    {% set ativo = (filtro.status.value if filtro.status else '') == valor %}
+    <a class="aba {% if ativo %}ativa{% endif %}" {% if ativo %}aria-current="true"{% endif %}
+       href="{{ url_for('chamados.listar', status=valor or None,
+                        data=filtro.data.isoformat() if filtro.data else None,
+                        setor=filtro.setor) }}">
+      {% if cor %}<i class="ponto {{ cor }}"></i>{% endif %}
+      <span>{{ rotulo }}</span><span class="aba-qtd" data-contar="{{ qtd }}">{{ qtd }}</span>
+      {% if ativo %}<span class="aba-indicador" aria-hidden="true"></span>{% endif %}
+    </a>
+  {%- endmacro %}
+  <nav class="abas" aria-label="Filtrar por status">
+    {{ link_status('', 'Todos', total) }}
+    {% for s in Status %}{{ link_status(s.value, s.rotulo, contagem[s], s.cor) }}{% endfor %}
+  </nav>
+
+  {% if admin %}
+  <form class="busca" method="get" role="search" aria-label="Consultar chamados">
+    {% if filtro.status %}<input type="hidden" name="status" value="{{ filtro.status.value }}">{% endif %}
+    <div class="campo">
+      <label for="f-data">Data</label>
+      <input id="f-data" type="date" name="data" value="{{ filtro.data.isoformat() if filtro.data else '' }}">
+    </div>
+    <div class="campo">
+      <label for="f-setor">Setor</label>
+      <select id="f-setor" name="setor">
+        <option value="">Todos os setores</option>
+        {% for s in setores %}<option {% if filtro.setor == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="busca-acoes">
+      <button class="botao secundario" type="submit">Buscar</button>
+      {% if busca_ativa %}
+      <a class="botao fantasma" href="{{ url_for('chamados.listar', status=filtro.status.value if filtro.status else None) }}">Limpar busca</a>
+      {% endif %}
+    </div>
+  </form>
+  {% endif %}
+
+  {% if chamados %}
+  <div class="tabela-wrap" data-lista>
+    <table class="tabela">
+      <thead>
+        <tr>
+          <th scope="col">Status</th>
+          <th scope="col">Data</th>
+          <th scope="col">Equipamento e problema</th>
+          <th scope="col">Setor</th>
+          <th scope="col">Etiqueta</th>
+          {% if admin %}<th scope="col">Solicitante</th>{% endif %}
+          <th scope="col"><span class="sr">Ações</span></th>
+        </tr>
+      </thead>
+      <tbody>
+      {% for c in chamados %}
+        <tr id="chamado-{{ c.id }}" class="linha linha-{{ c.status.cor }}" style="--i: {{ [loop.index0, 14]|min }}">
+          <td data-rotulo="Status" class="col-status">{{ status_tag(c.status) }}</td>
+          <td data-rotulo="Data" class="num">{{ c.data_formatada }}</td>
+          <td data-rotulo="Equipamento" class="col-item">
+            <div class="item-nome">{{ c.item }} <span class="item-num">nº {{ c.numero }}</span></div>
+            <p class="item-desc">{{ c.descricao }}</p>
+          </td>
+          <td data-rotulo="Setor">{{ c.setor }}</td>
+          <td data-rotulo="Etiqueta">{{ etiqueta(c.etiqueta) }}</td>
+          {% if admin %}<td data-rotulo="Solicitante">{{ c.solicitante }}</td>{% endif %}
+          <td class="col-acoes">
+            <div class="acoes">
+              {% if admin %}
+              <form class="form-status" method="post" action="{{ url_for('chamados.status', chamado_id=c.id) }}" data-carregando>
+                {{ csrf() }}<input type="hidden" name="voltar" value="{{ voltar }}">
+                <label class="sr" for="st-{{ c.id }}">Alterar status do chamado {{ c.numero }}</label>
+                <select id="st-{{ c.id }}" name="status" data-status-select>
+                  {% if c.status == Status.ABERTO %}<option value="" selected disabled>Alterar status</option>{% endif %}
+                  {% for s in status_admin %}
+                  <option value="{{ s.value }}" {% if c.status == s %}selected{% endif %}>{{ s.rotulo }}</option>
+                  {% endfor %}
+                </select>
+                <button class="botao secundario pequeno" type="submit">Salvar</button>
+              </form>
+              {% endif %}
+              {% if c.pode_ser_cancelado %}
+              <form method="post" action="{{ url_for('chamados.cancelar', chamado_id=c.id) }}"
+                    data-confirmar-cancelamento data-numero="{{ c.numero }}" data-item="{{ c.item }}">
+                {{ csrf() }}<input type="hidden" name="voltar" value="{{ voltar }}">
+                <button class="botao perigo-texto pequeno" type="submit">Cancelar chamado</button>
+              </form>
+              {% elif not admin %}
+              <span class="sem-acao">Atendimento iniciado</span>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <p class="rodape-lista">{{ chamados|length }} {{ 'chamado' if chamados|length == 1 else 'chamados' }} na lista.</p>
+  {% else %}
+  <div class="vazio">
+    {{ semaforo(Status.ANDAMENTO, 'grande-apagado piscante') }}
+    {% if busca_ativa or filtro.status %}
+      <h2>Nenhum chamado com esses filtros</h2>
+      <p>Mude a data, o setor ou o status para ver outros chamados.</p>
+      <a class="botao secundario" href="{{ url_for('chamados.listar') }}">Ver todos os chamados</a>
+    {% else %}
+      <h2>Nenhum chamado ainda</h2>
+      <p>Quando um computador, impressora ou outro equipamento precisar de reparo, abra um chamado e acompanhe por aqui.</p>
+      <a class="botao primario" href="{{ url_for('chamados.novo') }}">Abrir o primeiro chamado</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<dialog class="dialogo" id="dialogo-cancelar" aria-labelledby="dlg-titulo">
+  <form method="dialog">
+    <h2 id="dlg-titulo">Cancelar o chamado <span data-dlg-numero></span>?</h2>
+    <p>O chamado de <strong data-dlg-item></strong> será excluído do sistema. Não dá para desfazer.</p>
+    <div class="dialogo-acoes">
+      <button class="botao fantasma" value="nao">Manter chamado</button>
+      <button class="botao perigo" value="sim">Cancelar chamado</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

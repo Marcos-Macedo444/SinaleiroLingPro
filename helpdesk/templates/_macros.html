@@ -1,0 +1,18 @@
+{# Semáforo: as três lâmpadas da caixa; só a do status atual fica acesa. #}
+{% macro semaforo(status, tamanho='') -%}
+<span class="semaforo {{ tamanho }} acende-{{ status.cor }}" role="img" aria-label="Status: {{ status.rotulo }}">
+  <i class="lamp vermelho"></i><i class="lamp amarelo"></i><i class="lamp verde"></i>
+</span>
+{%- endmacro %}
+
+{% macro status_tag(status) -%}
+<span class="status-tag" data-status="{{ status.value }}">{{ semaforo(status) }}<span class="status-texto">{{ status.rotulo }}</span></span>
+{%- endmacro %}
+
+{% macro etiqueta(numero) -%}
+<span class="plaqueta" title="Etiqueta de patrimônio">{{ numero }}</span>
+{%- endmacro %}
+
+{% macro csrf() -%}
+<input type="hidden" name="_csrf" value="{{ csrf_token() }}">
+{%- endmacro %}

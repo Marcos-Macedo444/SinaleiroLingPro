@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_tag, csrf with context %}
+{% block titulo %}Abrir chamado · Central de Chamados{% endblock %}
+{% block conteudo %}
+{% macro erro(campo) -%}
+  {% if erros.get(campo) %}<p class="erro-campo" id="erro-{{ campo }}">{{ erros[campo] }}</p>{% endif %}
+{%- endmacro %}
+{% macro aria(campo) -%}
+  {% if erros.get(campo) %}aria-invalid="true" aria-describedby="erro-{{ campo }}"{% endif %}
+{%- endmacro %}
+
+<div class="pagina estreita">
+  <a class="voltar" href="{{ url_for('chamados.listar') }}">Voltar para os chamados</a>
+  <div class="cabecalho">
+    <div>
+      <h1>Abrir chamado</h1>
+      <p class="sub">Conte qual equipamento parou e onde ele está. A equipe de TI recebe na hora.</p>
+    </div>
+  </div>
+
+  {% if erros %}
+  <p class="erro-form" role="alert">Faltam {{ erros|length }} {{ 'informação' if erros|length == 1 else 'informações' }} para abrir o chamado. Confira os campos marcados.</p>
+  {% endif %}
+
+  <form class="formulario" method="post" novalidate data-carregando>
+    {{ csrf() }}
+    <fieldset>
+      <legend>Equipamento</legend>
+      <div class="grade">
+        <div class="campo">
+          <label for="item">Nome do item</label>
+          <input id="item" name="item" list="itens-comuns" maxlength="80" required
+                 placeholder="Ex.: Impressora HP do 2º andar" value="{{ dados.get('item', '') }}" {{ aria('item') }}>
+          <datalist id="itens-comuns">
+            <option>Computador</option><option>Notebook</option><option>Monitor</option>
+            <option>Impressora</option><option>Scanner</option><option>Telefone IP</option>
+            <option>Projetor</option><option>Roteador</option><option>Nobreak</option>
+          </datalist>
+          {{ erro('item') }}
+        </div>
+        <div class="campo">
+          <label for="etiqueta">Número da etiqueta</label>
+          <input id="etiqueta" name="etiqueta" class="input-plaqueta" maxlength="30" required autocapitalize="characters"
+                 placeholder="Ex.: PAT-004512" value="{{ dados.get('etiqueta', '') }}" {{ aria('etiqueta') }}>
+          <p class="dica">Fica na plaqueta de patrimônio colada no equipamento.</p>
+          <div class="plaqueta-previa" data-plaqueta-previa aria-hidden="true"></div>
+          {{ erro('etiqueta') }}
+        </div>
+      </div>
+      <div class="campo">
+        <label for="descricao">Descrição do problema</label>
+        <textarea id="descricao" name="descricao" rows="5" maxlength="1000" required
+                  placeholder="O que acontece, desde quando e se aparece alguma mensagem de erro." {{ aria('descricao') }}>{{ dados.get('descricao', '') }}</textarea>
+        <p class="dica"><span data-contador="descricao">{{ dados.get('descricao', '')|length }}</span> de 1000 caracteres</p>
+        {{ erro('descricao') }}
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Local e data</legend>
+      <div class="grade">
+        <div class="campo">
+          <label for="setor">Setor</label>
+          <select id="setor" name="setor" required {{ aria('setor') }}>
+            <option value="" {% if not dados.get('setor') %}selected{% endif %} disabled>Escolha o setor</option>
+            {% for s in setores %}<option {% if dados.get('setor') == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+          </select>
+          {{ erro('setor') }}
+        </div>
+        <div class="campo">
+          <label for="data">Data</label>
+          <input id="data" name="data" type="date" required value="{{ dados.get('data', hoje) }}" {{ aria('data') }}>
+          {{ erro('data') }}
+        </div>
+      </div>
+      <div class="campo">
+        <span class="label">Status</span>
+        <div class="status-fixo">
+          {{ status_tag(Status.ABERTO) }}
+          <p class="dica">Todo chamado começa em aberto. O status muda quando a TI iniciar o atendimento.</p>
+        </div>
+      </div>
+    </fieldset>
+
+    <div class="form-acoes">
+      <a class="botao fantasma" href="{{ url_for('chamados.listar') }}">Descartar</a>
+      <button class="botao primario" type="submit">Abrir chamado</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
