@@ -7,7 +7,7 @@
   <title>{% block titulo %}Sinaleiro{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,300..900;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass:ital,wght@0,300..900;1,700&family=Press+Start+2P&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
   <link rel="icon" href="{{ url_for('static', filename='icone.svg') }}" type="image/svg+xml">
 </head>
@@ -56,6 +56,16 @@
     {% block conteudo %}{% endblock %}
   </main>
 
+  <div class="estrada" data-estrada="{{ 'app' if usuario_logado else 'login' }}" role="button" tabindex="0"
+       aria-label="Chamar o carrinho" title="Chamar o carrinho">
+    <div class="estrada-pista"><span class="faixa-pedestre" aria-hidden="true"></span><span class="estrada-dica" aria-hidden="true">Clique para chamar o carro</span>
+      <button type="button" class="som-aviso" data-som-aviso hidden>Ative o som para ouvir o motorista</button>
+      <button type="button" class="som-botao" data-som aria-pressed="true">
+        <i class="som-icone" aria-hidden="true"></i><span class="som-rotulo">Som ligado</span>
+      </button></div>
+  </div>
+
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='carro.js') }}" defer></script>
 </body>
 </html>

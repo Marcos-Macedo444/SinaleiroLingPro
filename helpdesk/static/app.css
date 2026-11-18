@@ -765,3 +765,219 @@ code { font-family: inherit; font-weight: 750; background: var(--superficie-2); 
   .sinal .verde .lente::after, .sinal .verde::after { opacity: 1; }   /* sinal parado no verde */
   .legenda > div { opacity: 1; }
 }
+
+/* =========================================================================
+   Estrada no rodapé e o carrinho do Sinaleiro
+   ========================================================================= */
+:root { --estrada-h: 58px; --px: 4px; }
+body { padding-bottom: var(--estrada-h); }
+.login { min-height: calc(100vh - var(--estrada-h)); }
+
+.estrada {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 25;
+  height: var(--estrada-h);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.estrada:focus-visible { outline: none; box-shadow: inset 0 0 0 3px var(--placa); border-radius: 0; }
+/* Meio-fio: blocos de concreto com junta */
+.estrada::before {
+  content: ""; position: absolute; left: 0; right: 0; top: 0; height: 8px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.55) 0 1px, transparent 1px),
+    repeating-linear-gradient(90deg, #D5D9DE 0 54px, #B9BEC5 54px 56px);
+  box-shadow: 0 2px 0 #9DA3AB;
+}
+.estrada-pista {
+  position: absolute; left: 0; right: 0; top: 10px; bottom: 0;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    linear-gradient(180deg, #2E3239, var(--asfalto) 40%, #22252A);
+}
+.estrada-pista::before { /* faixa central tracejada */
+  content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,.75) 0 40px, transparent 40px 76px);
+}
+.estrada-dica {
+  position: absolute; right: 16px; bottom: 6px;
+  font-size: 12px; font-weight: 650; color: rgba(255,255,255,.4);
+  opacity: 0; transition: opacity .3s;
+}
+.estrada:hover .estrada-dica, .estrada:focus-visible .estrada-dica { opacity: 1; }
+
+/* ---------- O carro ----------------------------------------------------- */
+.carro {
+  position: absolute; left: 0; bottom: 8px;
+  width: calc(66 * var(--px)); height: calc(30 * var(--px));
+  transform: translateX(-200vw);
+  visibility: hidden; pointer-events: none;
+}
+.carro.visivel { visibility: visible; }
+.carro::before { /* sombra no asfalto */
+  content: ""; position: absolute; left: 4%; right: 4%; bottom: calc(var(--px) * -0.5); height: calc(var(--px) * 2);
+  background: rgba(0,0,0,.45); border-radius: 50%; filter: blur(2px);
+}
+.carro-svg { position: relative; display: block; width: 100%; height: 100%; overflow: visible; }
+.c-carroceria { transform-box: view-box; transform-origin: 50px 22px; }
+.c-boneco { transform: translateY(7px); }
+.carro .c-roda-1, .carro[data-roda="1"] .c-roda-0 { display: none; }
+.carro[data-roda="1"] .c-roda-1 { display: inline; }
+.c-mao-1, .carro.acenando .c-mao-0 { display: none; }
+.carro.acenando .c-mao-1 { display: inline; }
+.c-lanterna rect { transition: fill .15s; }
+.carro.freando .c-lanterna rect { fill: #FF4B2F; }
+.carro.freando .c-lanterna { filter: drop-shadow(0 0 1.5px #FF4B2F) drop-shadow(0 0 4px rgba(255,75,47,.8)); }
+
+/* Linhas de velocidade na arrancada */
+.carro.veloz::after {
+  content: ""; position: absolute; left: calc(100% + 10px); top: 38%;
+  width: calc(var(--px) * 7); height: var(--px);
+  background: rgba(255,255,255,.7);
+  box-shadow:
+    calc(var(--px) * 3) calc(var(--px) * 4) 0 rgba(255,255,255,.55),
+    calc(var(--px) * -1) calc(var(--px) * 8) 0 rgba(255,255,255,.65),
+    calc(var(--px) * 5) calc(var(--px) * 12) 0 rgba(255,255,255,.4);
+  animation: veloz .18s steps(2) infinite;
+}
+@keyframes veloz { 50% { transform: translateX(calc(var(--px) * 3)); opacity: .5; } }
+
+.fumaca {
+  position: absolute; width: var(--s); height: var(--s);
+  background: #C7CBD1;
+  box-shadow: var(--s) 0 0 #DADDE1, 0 calc(var(--s) * -1) 0 #B4B9C0;
+}
+
+/* ---------- Balão de fala (pixel) --------------------------------------- */
+.balao {
+  --b: calc(var(--px) * .75);
+  position: absolute; bottom: calc(100% + var(--px) * 3); left: var(--balao-x, calc(var(--px) * 6));
+  padding: 14px 16px 12px;
+  background: #fff; color: var(--tinta);
+  font-family: "Press Start 2P", var(--fonte);
+  font-size: 12px; line-height: 1.85; white-space: pre;
+  box-shadow:
+    0 calc(var(--b) * -1) 0 0 var(--tinta), 0 var(--b) 0 0 var(--tinta),
+    var(--b) 0 0 0 var(--tinta), calc(var(--b) * -1) 0 0 0 var(--tinta),
+    0 calc(var(--b) * 2.5) 0 0 rgba(0,0,0,.25);
+  transform: scale(0); transform-origin: var(--cauda, 40px) 100%;
+  transition: transform .26s steps(4);
+}
+.balao.aberto { transform: scale(1); }
+.balao::after { /* rabinho em degraus apontando para a janela */
+  content: ""; position: absolute; top: 100%; left: var(--cauda, 40px);
+  width: calc(var(--px) * 2); height: var(--px); margin-top: var(--b);
+  background: var(--tinta);
+  box-shadow:
+    calc(var(--px) * -1) var(--px) 0 var(--tinta),
+    calc(var(--px) * -2) calc(var(--px) * 2) 0 var(--tinta);
+}
+.balao::before { /* parte branca do rabinho */
+  content: ""; position: absolute; top: 100%; left: var(--cauda, 40px); z-index: 1;
+  width: var(--px); height: var(--b); background: #fff;
+}
+.balao-texto::after { /* cursor piscando enquanto digita */
+  content: ""; display: inline-block; width: .6em; height: .14em; margin-left: .2em;
+  background: currentColor; vertical-align: baseline;
+  animation: cursor .7s steps(1) infinite;
+}
+@keyframes cursor { 50% { opacity: 0; } }
+
+@media (max-width: 640px) {
+  :root { --estrada-h: 50px; }
+  .balao { font-size: 9px; padding: 11px 12px 9px; }
+  .avisos { bottom: calc(var(--estrada-h) + 14px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .balao { transition: none; }
+}
+
+/* Na volta o carro vem espelhado (andando para a direita). */
+.carro.virado .carro-svg { transform: scaleX(-1); }
+.carro.virado.veloz::after { left: auto; right: calc(100% + 10px); }
+
+/* Faixa de pedestres no meio da pista: o carro sempre para antes dela. */
+.faixa-pedestre {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 72px; margin-left: -36px;
+  background:
+    repeating-linear-gradient(180deg, rgba(255,255,255,.82) 0 5px, transparent 5px 10px) center / 100% calc(100% - 6px) no-repeat,
+    var(--asfalto);
+}
+.c-boca { display: none; }
+.carro.falando .c-boca { display: inline; }
+@media (max-width: 640px) {
+  .faixa-pedestre { left: 30%; width: 52px; margin-left: -26px; }
+}
+
+/* ---------- Buzina (efeito visual) -------------------------------------- */
+.buzina-fx {
+  position: absolute; top: calc(var(--px) * 4); right: calc(100% - var(--px) * 2);
+  font-family: "Press Start 2P", var(--fonte); font-size: 11px; color: #FFD43B;
+  text-shadow: 2px 0 0 var(--tinta), -2px 0 0 var(--tinta), 0 2px 0 var(--tinta), 0 -2px 0 var(--tinta), 2px 2px 0 var(--tinta);
+  transform: scale(0) rotate(-8deg); transform-origin: right bottom;
+  white-space: nowrap; pointer-events: none;
+}
+.carro.virado .buzina-fx { right: auto; left: calc(100% - var(--px) * 2); transform-origin: left bottom; }
+.carro.buzinando .buzina-fx { animation: buzina-fx .9s steps(1) both; }
+@keyframes buzina-fx {
+  0%   { transform: scale(1) rotate(-8deg); }
+  20%  { transform: scale(.85) rotate(-4deg); }
+  30%  { transform: scale(1.15) rotate(-10deg); }
+  80%  { transform: scale(1.15) rotate(-10deg); opacity: 1; }
+  100% { transform: scale(1.15) rotate(-10deg); opacity: 0; }
+}
+
+/* ---------- Botão de som na estrada ------------------------------------- */
+.som-botao {
+  position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 2;
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 30px; padding: 2px 11px 0 9px;
+  font: inherit; font-size: 12.5px; font-weight: 700; color: #DDE2E8;
+  background: rgba(20,22,26,.75); border: 1px solid rgba(255,255,255,.18); border-radius: 6px;
+  cursor: pointer;
+}
+.som-botao:hover { background: rgba(20,22,26,.95); color: #fff; }
+.som-botao:focus-visible { box-shadow: 0 0 0 2px #fff; }
+.som-icone { /* alto-falante em pixel */
+  position: relative; width: 4px; height: 6px; background: currentColor;
+  box-shadow: 4px -2px 0 currentColor, 4px 2px 0 currentColor, 4px 0 0 currentColor, 6px -4px 0 currentColor, 6px 4px 0 currentColor, 6px -2px 0 currentColor, 6px 2px 0 currentColor, 6px 0 0 currentColor;
+  margin-right: 10px;
+}
+.som-icone::after { /* ondas sonoras */
+  content: ""; position: absolute; left: 11px; top: -2px; width: 2px; height: 10px;
+  background: currentColor; box-shadow: 4px -2px 0 currentColor, 4px 2px 0 currentColor;
+}
+.som-mudo .som-icone::after { width: 8px; height: 2px; top: 2px; transform: rotate(45deg); box-shadow: none; }
+.som-mudo .som-botao { color: #8E96A1; }
+/* Som bloqueado pelo navegador: o botão pede um clique. */
+.som-bloqueado .som-botao { animation: som-pede 1s steps(2) infinite; }
+@keyframes som-pede { 50% { border-color: #FFD43B; color: #FFD43B; } }
+
+@media (max-width: 640px) {
+  .som-rotulo { display: none; }
+  .som-botao { padding: 0 8px; }
+  .som-icone { margin-right: 12px; }
+  .nav a { white-space: nowrap; }
+  .topo-interno { gap: 10px; }
+  .wordmark { font-size: 19px; }
+}
+
+/* Balão mínimo pedindo para ativar o áudio (fica ao lado do botão de som). */
+.som-aviso {
+  position: absolute; left: 14px; bottom: calc(100% + 12px); z-index: 3;
+  padding: 9px 12px 7px;
+  font-family: "Press Start 2P", var(--fonte); font-size: 9px; line-height: 1.5;
+  color: var(--tinta); background: #fff; border: 0; border-radius: 0; cursor: pointer;
+  box-shadow: 0 -3px 0 var(--tinta), 0 3px 0 var(--tinta), 3px 0 0 var(--tinta), -3px 0 0 var(--tinta), 0 6px 0 rgba(0,0,0,.2);
+  animation: aviso-som-entra .3s steps(3) both, aviso-som-flutua 1.6s steps(2) .3s infinite;
+}
+.som-aviso[hidden] { display: none; }
+.som-aviso::after { /* rabinho apontando para o botão de som */
+  content: ""; position: absolute; left: 16px; top: calc(100% + 3px);
+  width: 6px; height: 3px; background: var(--tinta);
+  box-shadow: 0 3px 0 var(--tinta), -3px 6px 0 var(--tinta);
+}
+.som-aviso:hover { background: #FFF6D6; }
+.som-aviso:focus-visible { outline: 3px solid var(--placa); outline-offset: 5px; }
+@keyframes aviso-som-entra { from { transform: scale(0); transform-origin: left bottom; } }
+@keyframes aviso-som-flutua { 50% { translate: 0 -3px; } }
+@media (max-width: 640px) { .som-aviso { font-size: 8px; } }
