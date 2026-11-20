@@ -61,3 +61,16 @@
   </section>
 </div>
 {% endblock %}
+
+{% block estrada %}
+  <div class="estrada" data-estrada="login" role="button" tabindex="0"
+       aria-label="Chamar o carrinho" title="Chamar o carrinho">
+    <div class="estrada-pista"><span class="faixa-pedestre" aria-hidden="true"></span><span class="estrada-dica" aria-hidden="true">Clique para chamar o carro</span>
+      <button type="button" class="som-aviso" data-som-aviso hidden>Ative o som para ouvir o motorista</button>
+      <button type="button" class="som-botao" data-som aria-pressed="true">
+        <i class="som-icone" aria-hidden="true"></i><span class="som-rotulo">Som ligado</span>
+      </button></div>
+  </div>
+{% endblock %}
+
+{% block scripts %}<script src="{{ url_for('static', filename='carro.js') }}" defer></script>{% endblock %}

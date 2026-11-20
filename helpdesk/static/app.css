@@ -981,3 +981,6 @@ body { padding-bottom: var(--estrada-h); }
 @keyframes aviso-som-entra { from { transform: scale(0); transform-origin: left bottom; } }
 @keyframes aviso-som-flutua { 50% { translate: 0 -3px; } }
 @media (max-width: 640px) { .som-aviso { font-size: 8px; } }
+
+/* Fora do login a estrada é só decoração (o carro passa apenas no login). */
+.estrada-decorativa { cursor: default; pointer-events: none; }

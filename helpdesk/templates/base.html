@@ -56,16 +56,13 @@
     {% block conteudo %}{% endblock %}
   </main>
 
-  <div class="estrada" data-estrada="{{ 'app' if usuario_logado else 'login' }}" role="button" tabindex="0"
-       aria-label="Chamar o carrinho" title="Chamar o carrinho">
-    <div class="estrada-pista"><span class="faixa-pedestre" aria-hidden="true"></span><span class="estrada-dica" aria-hidden="true">Clique para chamar o carro</span>
-      <button type="button" class="som-aviso" data-som-aviso hidden>Ative o som para ouvir o motorista</button>
-      <button type="button" class="som-botao" data-som aria-pressed="true">
-        <i class="som-icone" aria-hidden="true"></i><span class="som-rotulo">Som ligado</span>
-      </button></div>
+  {% block estrada %}
+  <div class="estrada estrada-decorativa" aria-hidden="true">
+    <div class="estrada-pista"><span class="faixa-pedestre"></span></div>
   </div>
+  {% endblock %}
 
   <script src="{{ url_for('static', filename='app.js') }}" defer></script>
-  <script src="{{ url_for('static', filename='carro.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>
