@@ -1,6 +1,7 @@
 """Sinaleiro — helpdesk web para abertura e acompanhamento de chamados."""
 from __future__ import annotations
 
+import hashlib
 import os
 import secrets
 from datetime import timedelta
@@ -17,6 +18,9 @@ from .services import AuthService, ChamadoService
 
 RAIZ = Path(__file__).resolve().parent.parent
 
+# Na Vercel o código roda em funções serverless: só /tmp aceita escrita.
+NA_VERCEL = bool(os.environ.get("VERCEL"))
+
 
 class HelpdeskApp:
     """Monta a aplicação: banco, repositórios, serviços e controllers."""
@@ -30,8 +34,11 @@ class HelpdeskApp:
             SESSION_COOKIE_SAMESITE="Lax",
         )
 
-        self.db = Database(caminho_banco or RAIZ / "data" / "helpdesk.sqlite")
+        padrao = Path("/tmp/helpdesk.sqlite") if NA_VERCEL else RAIZ / "data" / "helpdesk.sqlite"
+        self.db = Database(caminho_banco or padrao)
         self.db.init_app(self.flask)
+        if NA_VERCEL and caminho_banco is None:
+            self._popular_demo()
 
         usuarios = UsuarioRepository(self.db)
         setores = SetorRepository(self.db)
@@ -66,8 +73,19 @@ class HelpdeskApp:
         def requisicao_invalida(e):
             return render_template("erro.html", codigo=400, mensagem=e.description), 400
 
+    def _popular_demo(self) -> None:
+        """Na Vercel o banco nasce vazio a cada instância: preenche com exemplos."""
+        from .demo import popular
+        with self.flask.app_context():
+            popular(ChamadoRepository(self.db), somente_se_vazio=True)
+
     @staticmethod
     def _chave_local() -> str:
+        if NA_VERCEL:
+            # Sem SECRET_KEY configurada, usa uma chave estável do projeto para que
+            # todas as instâncias aceitem o mesmo cookie de sessão.
+            base = os.environ.get("VERCEL_PROJECT_ID", "") + os.environ.get("VERCEL_GIT_REPO_ID", "sinaleiro")
+            return hashlib.sha256(f"sinaleiro:{base}".encode()).hexdigest()
         arquivo = RAIZ / "data" / ".secret_key"
         arquivo.parent.mkdir(parents=True, exist_ok=True)
         if not arquivo.exists():
