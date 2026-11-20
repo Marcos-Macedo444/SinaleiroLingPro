@@ -14,8 +14,6 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
   const reduzido = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const FALA_IDA = "Oii, Edgar!!\nEsse trabalho vale 10 pontos";
   const FALA_VOLTA = "Olha lá, hein!\nVamos cobrar nossos 10 pontos! rsrs";
-  const VOZ_IDA = "Oii, Édgar! Esse trabalho vale dez pontos!";
-  const VOZ_VOLTA = "Olha lá, hein! Vamos cobrar nossos dez pontos! Rá rá!";
   const COLS = 66, LINHAS = 30;
 
   const PALETA = {
@@ -103,22 +101,49 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
 
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  /* ---------- Som: buzina sintetizada e voz do motorista ----------------- *
-   * Navegadores só liberam áudio depois que a pessoa interage com a página
-   * (clique ou tecla). Se ainda estiver bloqueado, o botão de som avisa.   */
+  /* ---------- Som: buzina sintetizada e falas gravadas -------------------- *
+   * Navegadores (principalmente o Safari do iPhone) só liberam áudio dentro de
+   * um toque/clique. No primeiro toque o código "destrava" tudo de uma vez:
+   * retoma o AudioContext, toca um buffer mudo e pré-aquece os <audio> das
+   * falas — depois disso eles podem tocar sozinhos no meio da animação.   */
   const Som = {
     ctx: null,
+    desbloqueado: false,
     ligado: (() => { try { return localStorage.getItem("sinaleiro-som") !== "off"; } catch { return true; } })(),
+    falas: {
+      ida: criarAudio(estrada.dataset.audioIda),
+      volta: criarAudio(estrada.dataset.audioVolta),
+    },
     contexto() {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return null;
       if (!this.ctx) this.ctx = new AC();
-      if (this.ctx.state === "suspended") this.ctx.resume().catch(() => {});
+      if (this.ctx.state !== "running") this.ctx.resume().catch(() => {});
       return this.ctx;
     },
+    /* Precisa rodar de forma síncrona dentro do evento de toque/clique. */
+    desbloquear() {
+      // iOS: trata como reprodução de mídia (toca mesmo com a chave de silencioso).
+      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch {}
+      const ctx = this.contexto();
+      if (ctx) {
+        const buffer = ctx.createBuffer(1, 1, 22050);
+        const fonte = ctx.createBufferSource();
+        fonte.buffer = buffer; fonte.connect(ctx.destination); fonte.start(0);
+      }
+      Object.values(this.falas).forEach((audio) => {
+        if (!audio || audio.dataset.pronto || !audio.paused) return;
+        audio.muted = true;
+        audio.play().then(() => {
+          audio.pause(); audio.currentTime = 0; audio.muted = false; audio.dataset.pronto = "1";
+        }).catch(() => { audio.muted = false; });
+      });
+      this.desbloqueado = true;
+      mostrarAvisoSom(false);
+    },
     liberado() {
-      const ativo = navigator.userActivation ? navigator.userActivation.hasBeenActive : true;
-      return ativo && this.ctx && this.ctx.state === "running";
+      return this.desbloqueado || Boolean(this.ctx && this.ctx.state === "running"
+        && navigator.userActivation && navigator.userActivation.hasBeenActive);
     },
     avisarBloqueio() {
       if (this.ligado && !this.liberado()) mostrarAvisoSom(true);
@@ -160,40 +185,41 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
       toque(t0, 0.16);          // bi
       toque(t0 + 0.24, 0.36);   // biii
     },
-    voz: null,
-    escolherVoz() {
-      const vozes = window.speechSynthesis ? speechSynthesis.getVoices() : [];
-      const norm = (v) => v.lang.replace("_", "-").toLowerCase();
-      this.voz = vozes.find((v) => norm(v) === "pt-br") || vozes.find((v) => norm(v).startsWith("pt")) || null;
-    },
-    falar(texto) {
-      if (!this.ligado || !window.speechSynthesis) return Promise.resolve();
-      this.avisarBloqueio();
+    /* Toca a fala gravada; resolve quando termina (ou na hora, se bloqueada). */
+    tocarFala(nome) {
+      const audio = this.falas[nome];
+      if (!this.ligado || !audio) return Promise.resolve();
       return new Promise((pronto) => {
-        const fala = new SpeechSynthesisUtterance(texto);
-        fala.lang = "pt-BR";
-        if (this.voz) fala.voice = this.voz;
-        fala.rate = 1.05; fala.pitch = 1.35;
-        const fim = setTimeout(pronto, Math.max(2500, texto.length * 95)); // caso o navegador não avise o fim
-        fala.onend = fala.onerror = () => { clearTimeout(fim); pronto(); };
-        speechSynthesis.cancel();
-        speechSynthesis.speak(fala);
+        const limite = setTimeout(pronto, ((audio.duration || 5) + 1.5) * 1000);
+        const fim = () => { clearTimeout(limite); pronto(); };
+        audio.onended = fim;
+        audio.muted = false;
+        audio.currentTime = 0;
+        audio.play().catch(() => { mostrarAvisoSom(true); fim(); });
       });
     },
+    parar() {
+      Object.values(this.falas).forEach((audio) => audio && audio.pause());
+    },
   };
-  if (window.speechSynthesis) {
-    Som.escolherVoz();
-    speechSynthesis.addEventListener?.("voiceschanged", () => Som.escolherVoz());
+
+  function criarAudio(url) {
+    if (!url) return null;
+    const audio = new Audio(url);
+    audio.preload = "auto";
+    audio.setAttribute("playsinline", "");
+    return audio;
   }
+
   const avisoSom = estrada.querySelector("[data-som-aviso]");
   function mostrarAvisoSom(mostrar) {
     if (!avisoSom) return;
     avisoSom.hidden = !mostrar;
     estrada.classList.toggle("som-bloqueado", mostrar);
   }
-  const liberarAudio = () => { Som.contexto(); mostrarAvisoSom(false); };
-  ["pointerdown", "keydown"].forEach((ev) => document.addEventListener(ev, () => Som.contexto(), { capture: true }));
-  ["click", "keydown"].forEach((ev) => document.addEventListener(ev, () => setTimeout(liberarAudio), { capture: true }));
+  // touchend/click são os eventos que o iOS aceita para liberar áudio.
+  ["touchend", "click", "keydown"].forEach((ev) =>
+    document.addEventListener(ev, () => { if (Som.ligado) Som.desbloquear(); }, { capture: true }));
 
   const botaoSom = estrada.querySelector("[data-som]");
   const atualizarBotaoSom = () => {
@@ -206,26 +232,27 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
     ev.stopPropagation();
     Som.ligado = !Som.ligado;
     try { localStorage.setItem("sinaleiro-som", Som.ligado ? "on" : "off"); } catch {}
-    if (!Som.ligado && window.speechSynthesis) speechSynthesis.cancel();
-    if (Som.ligado) { liberarAudio(); Som.bipe(); } else { mostrarAvisoSom(false); }
+    if (Som.ligado) { Som.desbloquear(); Som.bipe(); } else { Som.parar(); mostrarAvisoSom(false); }
     atualizarBotaoSom();
   });
   botaoSom?.addEventListener("keydown", (ev) => ev.stopPropagation());
   atualizarBotaoSom();
 
+  // Tocar no aviso libera o som e, se o carro já passou, chama ele de novo.
   avisoSom?.addEventListener("click", (ev) => {
     ev.stopPropagation();
     if (!Som.ligado) { Som.ligado = true; try { localStorage.setItem("sinaleiro-som", "on"); } catch {} atualizarBotaoSom(); }
-    liberarAudio();
+    Som.desbloquear();
     Som.bipe();
+    if (!rodando) setTimeout(cena, 300);
   });
   avisoSom?.addEventListener("keydown", (ev) => ev.stopPropagation());
 
   // Ao abrir a tela: se o navegador ainda não liberou o áudio, mostra o aviso.
   if (Som.ligado) {
     const ctx = Som.contexto();
-    const semClique = navigator.userActivation ? !navigator.userActivation.hasBeenActive : false;
-    setTimeout(() => { if (semClique || (ctx && ctx.state !== "running")) mostrarAvisoSom(true); }, 300);
+    const semClique = navigator.userActivation ? !navigator.userActivation.hasBeenActive : true;
+    setTimeout(() => { if (!Som.desbloqueado && (semClique || (ctx && ctx.state !== "running"))) mostrarAvisoSom(true); }, 300);
   }
 
   const tamanhoPixel = () => (window.innerWidth < 640 ? 3 : 4);
@@ -297,7 +324,7 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
   }
 
   /* Uma passagem: entra por um lado, freia, cumprimenta e sai pelo outro. */
-  async function passagem({ sentido, fala, voz, buzinar, paradaRel }) {
+  async function passagem({ sentido, fala, audio, buzinar, paradaRel }) {
     const px = tamanhoPixel();
     carro.style.setProperty("--px", `${px}px`);
     carro.classList.toggle("virado", sentido > 0);
@@ -368,7 +395,7 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
     balao.classList.add("aberto");
     await espera(240);
     const boca = setInterval(() => carro.classList.toggle("falando"), 110);
-    const falaPronta = Som.falar(voz);
+    const falaPronta = Som.tocarFala(audio);   // voz gravada
     await digitar(fala);
     await falaPronta;
     clearInterval(boca);
@@ -401,14 +428,14 @@ const CARRO_PIXELS = {"corpo":[".........................KKKKKKKKKKKKKKKKKKKKKKK
     balaoTexto.textContent = "";
   }
 
-  let rodando = false;
+  var rodando = false;   // var: lido também pelo aviso de som, declarado acima
   async function cena() {
     if (rodando) return;
     rodando = true;
     try {
-      await passagem({ sentido: -1, fala: FALA_IDA, voz: VOZ_IDA, buzinar: true, paradaRel: .6 });      // ida
+      await passagem({ sentido: -1, fala: FALA_IDA, audio: "ida", buzinar: true, paradaRel: .6 });      // ida
       await espera(reduzido ? 300 : 1100);
-      await passagem({ sentido: +1, fala: FALA_VOLTA, voz: VOZ_VOLTA, buzinar: false, paradaRel: .42 }); // volta
+      await passagem({ sentido: +1, fala: FALA_VOLTA, audio: "volta", buzinar: false, paradaRel: .42 }); // volta
     } finally {
       rodando = false;
     }

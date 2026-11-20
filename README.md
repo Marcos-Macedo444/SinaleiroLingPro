@@ -98,6 +98,7 @@ A identidade visual vem da **sinalização viária**, o mundo do nome Sinaleiro:
 ### Movimento
 
 - **Login**: um grupo focal realista (caixa, palas e lentes de LED) roda o ciclo verde → amarelo → vermelho. A legenda acende junto, e a faixa da pista anda no verde, freia no amarelo e para no vermelho. Ao entrar, o sinal abre no verde; com senha errada, o vermelho pisca.
+- **Carrinho no login**: um SUV em pixel art passa pela estrada, buzina, abaixa o vidro e o motorista fala com **vozes gravadas** (`static/audio/fala-ida.mp3` na ida e `fala-volta.mp3` na volta). No iPhone, o primeiro toque na tela libera o áudio; o balão "Ative o som" indica isso.
 - **Navegação** com View Transitions: a página troca suavemente e o marcador das abas desliza.
 - **Lista**: as lâmpadas ligam com a cintilação de lâmpada real. O admin vê a cor nova antes de salvar, a linha alterada ou criada ganha destaque e o chamado cancelado sai da fila.
 - **Avisos** com contagem regressiva tracejada, que pausa no hover.

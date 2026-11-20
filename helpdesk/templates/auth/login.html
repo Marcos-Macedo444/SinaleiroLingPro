@@ -64,6 +64,8 @@
 
 {% block estrada %}
   <div class="estrada" data-estrada="login" role="button" tabindex="0"
+       data-audio-ida="{{ url_for('static', filename='audio/fala-ida.mp3') }}"
+       data-audio-volta="{{ url_for('static', filename='audio/fala-volta.mp3') }}"
        aria-label="Chamar o carrinho" title="Chamar o carrinho">
     <div class="estrada-pista"><span class="faixa-pedestre" aria-hidden="true"></span><span class="estrada-dica" aria-hidden="true">Clique para chamar o carro</span>
       <button type="button" class="som-aviso" data-som-aviso hidden>Ative o som para ouvir o motorista</button>
