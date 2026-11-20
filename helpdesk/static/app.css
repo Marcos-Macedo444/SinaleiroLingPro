@@ -996,3 +996,96 @@ body { padding-bottom: var(--estrada-h); }
   background: var(--amarelo); border: 2px solid var(--tinta); transform: rotate(45deg);
 }
 @media (max-width: 640px) { .faixa-alerta { width: calc(100% - 32px); } }
+
+/* =========================================================================
+   Ajustes para celular (auditados em 320, 360, 390, 430 e 768 px)
+   ========================================================================= */
+/* Diálogo nunca passa da largura da tela; botões quebram linha se precisar. */
+.dialogo { max-width: min(450px, calc(100vw - 24px)); }
+.dialogo-acoes { flex-wrap: wrap; }
+
+@media (max-width: 640px) {
+  /* iOS dá zoom em campos com fonte < 16px: todos os campos ficam com 16px. */
+  input, select, textarea { font-size: 16px; }
+  input[type="date"] {
+    -webkit-appearance: none; appearance: none; display: block;
+    min-height: 44px; text-align: left; background-color: var(--superficie);
+  }
+  input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+
+  /* Alvos de toque com pelo menos 40px */
+  .botao.pequeno { --h: 40px; }
+  .form-status select { height: 40px; min-height: 40px; font-size: 15px; }
+
+  /* Topo em duas linhas: marca + Sair em cima, navegação embaixo */
+  .topo-interno { flex-wrap: wrap; height: auto; padding: 10px 16px 0; row-gap: 6px; }
+  .marca { order: 1; }
+  .conta { order: 2; margin-left: auto; }
+  .nav { order: 3; width: 100%; margin: 0 -9px; align-self: auto; }
+  .nav a { flex: 1; justify-content: center; min-height: 46px; padding: 0 6px; }
+  .nav a[aria-current="page"]::after { left: 12%; right: 12%; }
+
+  /* Abas de status em grade 2×2, sem rolagem lateral escondida */
+  .abas { display: grid; grid-template-columns: 1fr 1fr; overflow: visible; border-bottom: 0; gap: 6px; }
+  .aba {
+    justify-content: space-between; padding: 10px 12px 9px;
+    background: var(--superficie); border: 1px solid var(--linha); border-radius: 8px;
+  }
+  .aba.ativa { border-color: var(--tinta); box-shadow: inset 0 0 0 1px var(--tinta); }
+  .aba-indicador { display: none; }
+  .aba > span:not(.aba-qtd) { margin-right: auto; }
+
+  /* Busca do admin: campos inteiros, um embaixo do outro */
+  .busca { padding: 14px; }
+  .busca .campo { flex: 1 1 100%; }
+  .busca-acoes { display: grid; grid-template-columns: 1fr 1fr; }
+  .busca-acoes .botao { width: 100%; }
+
+  /* Cartões de chamado */
+  .acoes { gap: 8px; }
+  .form-status { flex: 1 1 100%; }
+  .form-status select { flex: 1; width: auto; }
+
+  /* Login: legenda em linha, sem quebrar palavras */
+  .legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+  .legenda dt { white-space: nowrap; font-size: 14px; }
+
+  /* Diálogo: botões ocupam a largura toda, ação principal em cima */
+  .dialogo form { padding: 22px 18px 18px; }
+  .dialogo-acoes { flex-direction: column-reverse; }
+  .dialogo-acoes .botao { width: 100%; }
+
+  /* Balão do som legível */
+  .som-aviso { font-size: 9px; max-width: calc(100vw - 32px); white-space: normal; }
+
+  /* Fora do login a estrada fica mais baixa para sobrar espaço de tela */
+  body:has(.estrada-decorativa) { --estrada-h: 30px; }
+  .estrada-decorativa .estrada-pista::before { height: 3px; }
+}
+@media (max-width: 360px) {
+  .wordmark { font-size: 18px; }
+  .cabecalho h1, .login-form h1 { font-size: 30px; }
+  .conta-info { display: none; }
+  .tabela tbody tr { grid-template-columns: 1fr; }
+  .tabela td[data-rotulo="Status"], .tabela .col-item { grid-column: auto; grid-row: auto; }
+}
+@media (max-width: 640px) {
+  .abas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aba { min-width: 0; gap: 7px; font-size: 14.5px; }
+  .aba > span:not(.aba-qtd) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+@media (max-width: 360px) {
+  .aba { padding: 9px 9px 8px; gap: 6px; font-size: 13.5px; }
+  .aba-qtd { min-width: 22px; padding: 2px 6px 0; }
+}
+@media (max-width: 640px) {
+  /* No celular o balão do som fica dentro da estrada, ao lado do botão,
+     para não cobrir os campos do formulário. */
+  .som-aviso {
+    left: 54px; right: 10px; bottom: auto; top: 50%; translate: 0 -50%;
+    width: auto; max-width: none; padding: 8px 10px 6px; font-size: 8.5px; line-height: 1.4; text-align: left;
+    animation: aviso-som-entra .3s steps(3) both;
+  }
+  .som-aviso::after { left: -9px; top: 50%; width: 3px; height: 6px; margin-top: -3px;
+    box-shadow: -3px 0 0 var(--tinta); }
+}
