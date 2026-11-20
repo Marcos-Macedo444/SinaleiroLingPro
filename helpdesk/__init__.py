@@ -64,6 +64,18 @@ class HelpdeskApp:
                 "banco_temporario": self.db.temporario,
             }
 
+        @app.get("/saude")
+        def saude():
+            """Diagnóstico público: confirma que o sistema e o banco respondem.
+            Não expõe endereço nem credenciais do banco."""
+            try:
+                self.db.consultar("SELECT 1 AS ok")
+                ok = True
+            except Exception:
+                ok = False
+            return {"status": "ok" if ok else "erro", "banco": type(self.db).__name__.replace("Database", "").lower(),
+                    "temporario": self.db.temporario}, (200 if ok else 503)
+
         @app.errorhandler(404)
         def nao_encontrado(_e):
             return render_template("erro.html", codigo=404,

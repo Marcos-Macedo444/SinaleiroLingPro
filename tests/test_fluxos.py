@@ -211,3 +211,8 @@ def test_carro_so_no_login(client):
     assert "carro.js" in client.get("/login").get_data(as_text=True)
     entrar(client, "admin", "admin123")
     assert "carro.js" not in lista(client)
+
+
+def test_saude(client):
+    r = client.get("/saude")
+    assert r.status_code == 200 and r.get_json()["status"] == "ok"
