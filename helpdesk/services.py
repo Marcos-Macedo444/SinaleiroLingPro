@@ -1,10 +1,19 @@
 """Regras de negócio do helpdesk."""
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .models import Chamado, StatusChamado, Usuario
 from .repositories import ChamadoRepository, FiltroChamados, SetorRepository, UsuarioRepository
+
+
+def hoje() -> date:
+    """Data de hoje no horário de Brasília (o servidor pode estar em UTC)."""
+    try:
+        return datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+    except ZoneInfoNotFoundError:
+        return date.today()
 
 
 class RegraNegocioError(Exception):
@@ -62,6 +71,11 @@ class ChamadoService:
         except ValueError:
             data_chamado = None
             erros["data"] = "Informe a data do chamado."
+        else:
+            if data_chamado > hoje():
+                erros["data"] = "A data não pode ser no futuro."
+            elif data_chamado.year < 2000:
+                erros["data"] = "Confira o ano da data do chamado."
 
         if campos["setor"] not in self._setores.listar():
             erros["setor"] = "Escolha o setor onde está o equipamento."
@@ -95,7 +109,12 @@ class ChamadoService:
             raise RegraNegocioError(
                 f"O chamado {chamado.numero} já está {chamado.status.rotulo.lower()} e não pode mais ser cancelado."
             )
-        self._chamados.excluir(chamado_id)  # cancelamento exclui o chamado do sistema
+        # Cancelar = excluir do sistema. A exclusão só acontece se o chamado ainda
+        # estiver em aberto no banco (protege contra alteração simultânea).
+        if not self._chamados.excluir_se_aberto(chamado_id):
+            raise RegraNegocioError(
+                f"O chamado {chamado.numero} acabou de entrar em atendimento e não pode mais ser cancelado."
+            )
         return chamado
 
     # ---- alteração de status (administrador) ----------------------------
@@ -110,7 +129,10 @@ class ChamadoService:
             raise RegraNegocioError("O status só pode ser alterado para Em andamento ou Finalizado.")
 
         chamado = self._obter(chamado_id)
-        self._chamados.atualizar_status(chamado_id, status)
+        if chamado.status is status:
+            raise RegraNegocioError(f"O chamado {chamado.numero} já está {status.rotulo.lower()}.")
+        if not self._chamados.atualizar_status(chamado_id, status):
+            raise RegraNegocioError("Chamado não encontrado. Ele pode ter sido cancelado.")
         chamado.status = status
         return chamado
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from flask import Flask, render_template
 
 from .controllers import AuthController, ChamadoController
-from .database import Database
+from .database import Database, criar_database
 from .models import StatusChamado
 from .repositories import ChamadoRepository, SetorRepository, UsuarioRepository
 from .security import Csrf, SessaoUsuario
@@ -18,27 +18,26 @@ from .services import AuthService, ChamadoService
 
 RAIZ = Path(__file__).resolve().parent.parent
 
-# Na Vercel o código roda em funções serverless: só /tmp aceita escrita.
+# Na Vercel o código roda em funções serverless (HTTPS, várias instâncias).
 NA_VERCEL = bool(os.environ.get("VERCEL"))
 
 
 class HelpdeskApp:
     """Monta a aplicação: banco, repositórios, serviços e controllers."""
 
-    def __init__(self, caminho_banco: Path | None = None):
+    def __init__(self, caminho_banco: Path | None = None, db: Database | None = None):
         self.flask = Flask(__name__)
         self.flask.config.update(
             SECRET_KEY=os.environ.get("SECRET_KEY") or self._chave_local(),
             PERMANENT_SESSION_LIFETIME=timedelta(hours=8),
             SESSION_COOKIE_HTTPONLY=True,
             SESSION_COOKIE_SAMESITE="Lax",
+            SESSION_COOKIE_SECURE=NA_VERCEL,
         )
 
-        padrao = Path("/tmp/helpdesk.sqlite") if NA_VERCEL else RAIZ / "data" / "helpdesk.sqlite"
-        self.db = Database(caminho_banco or padrao)
+        # Postgres quando houver DATABASE_URL (produção); SQLite no desenvolvimento.
+        self.db = db or criar_database(caminho_banco, RAIZ, NA_VERCEL)
         self.db.init_app(self.flask)
-        if NA_VERCEL and caminho_banco is None:
-            self._popular_demo()
 
         usuarios = UsuarioRepository(self.db)
         setores = SetorRepository(self.db)
@@ -62,6 +61,7 @@ class HelpdeskApp:
                 "usuario_logado": self.sessao.atual(),
                 "csrf_token": Csrf.token,
                 "Status": StatusChamado,
+                "banco_temporario": self.db.temporario,
             }
 
         @app.errorhandler(404)
@@ -72,12 +72,6 @@ class HelpdeskApp:
         @app.errorhandler(400)
         def requisicao_invalida(e):
             return render_template("erro.html", codigo=400, mensagem=e.description), 400
-
-    def _popular_demo(self) -> None:
-        """Na Vercel o banco nasce vazio a cada instância: preenche com exemplos."""
-        from .demo import popular
-        with self.flask.app_context():
-            popular(ChamadoRepository(self.db), somente_se_vazio=True)
 
     @staticmethod
     def _chave_local() -> str:
@@ -93,5 +87,5 @@ class HelpdeskApp:
         return arquivo.read_text().strip()
 
 
-def create_app(caminho_banco: Path | None = None) -> Flask:
-    return HelpdeskApp(caminho_banco).flask
+def create_app(caminho_banco: Path | None = None, db: Database | None = None) -> Flask:
+    return HelpdeskApp(caminho_banco, db).flask

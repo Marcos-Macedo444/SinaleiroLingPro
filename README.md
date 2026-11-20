@@ -34,17 +34,43 @@ Testes automatizados: `python -m pytest`.
 | Abertura de chamado: data, setor, item, descrição, status, etiqueta | `ChamadoService.abrir` |
 | Status inicial sempre "Em aberto" | definido no serviço, não pelo formulário |
 | Relatório ordenado do mais recente para o mais antigo | `ORDER BY data DESC, id DESC` |
-| Cancelamento só sem tratativa iniciada, excluindo o registro | `ChamadoService.cancelar` + `Chamado.pode_ser_cancelado` |
+| Cancelamento só sem tratativa iniciada, excluindo o registro | `ChamadoService.cancelar` + `ChamadoRepository.excluir_se_aberto` (atômico) |
 | Admin altera status para "Em andamento" / "Finalizado" | `ChamadoService.alterar_status` |
 | Admin consulta por data ou setor | filtros da lista (`FiltroChamados`) |
 | Cores: verde = aberto, amarelo = andamento, vermelho = finalizado | `StatusChamado.cor` + semáforo na interface |
+
+## Banco de dados
+
+O sistema funciona com dois bancos, escolhidos automaticamente:
+
+| Onde | Banco | Como |
+|---|---|---|
+| No seu computador | **SQLite** (`data/helpdesk.sqlite`) | nada a configurar |
+| Na Vercel (produção) | **Postgres** (ex.: Neon) | variável `DATABASE_URL` (ou `POSTGRES_URL`) |
+
+> **Por que Postgres na Vercel?** A Vercel roda o sistema em vários servidores
+> temporários. Com SQLite, cada servidor teria a própria cópia do banco: um chamado
+> cancelado em um servidor "voltava" quando a página era atendida por outro. Com
+> Postgres todos usam o mesmo banco. Sem `DATABASE_URL` na Vercel, o sistema ainda
+> funciona com um banco temporário e mostra um aviso para o administrador.
+
+### Publicar na Vercel
+
+1. Em vercel.com/new, importe o repositório e clique em **Deploy**.
+2. No projeto, abra **Storage → Create Database → Neon (Postgres)** e conecte ao projeto.
+   A Vercel cria a variável `DATABASE_URL` sozinha.
+3. (Recomendado) Crie a variável `SECRET_KEY` com um texto aleatório longo.
+4. Faça **Redeploy**. As tabelas e os usuários iniciais são criados no primeiro acesso.
+
+Testes nos dois bancos: `python -m pytest` (SQLite) e
+`TEST_DATABASE_URL=postgresql://... python -m pytest` (SQLite + Postgres).
 
 ## Arquitetura (orientada a objetos, em camadas)
 
 ```
 helpdesk/
 ├── models.py        Entidades: Usuario, Chamado, Perfil (enum), StatusChamado (enum)
-├── database.py      Database: conexão SQLite, criação do esquema e dados iniciais
+├── database.py      Database (abstrata) → SqliteDatabase / PostgresDatabase
 ├── repositories.py  UsuarioRepository, ChamadoRepository, SetorRepository (único lugar com SQL)
 ├── services.py      AuthService, ChamadoService (regras de negócio e validação)
 ├── security.py      SessaoUsuario (login/permissões por decorator) e Csrf
@@ -55,7 +81,7 @@ helpdesk/
 ```
 
 Cada camada só conhece a de baixo: controller → service → repository → database.
-Herança: todos os repositórios estendem `Repository`. Encapsulamento: regras como
+Herança e polimorfismo: `SqliteDatabase` e `PostgresDatabase` implementam a classe abstrata `Database`, e os repositórios funcionam com qualquer uma; todos os repositórios estendem `Repository`. Encapsulamento: regras como
 "pode ser cancelado" ficam dentro da própria entidade `Chamado`.
 
 ## Interface

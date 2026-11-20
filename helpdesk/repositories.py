@@ -1,7 +1,6 @@
-"""Repositórios: única camada que escreve SQL."""
+"""Repositórios: única camada que escreve SQL (padrão portável entre SQLite e Postgres)."""
 from __future__ import annotations
 
-import sqlite3
 from dataclasses import dataclass
 from datetime import date
 
@@ -13,24 +12,18 @@ class Repository:
     def __init__(self, db: Database):
         self._db = db
 
-    @property
-    def con(self) -> sqlite3.Connection:
-        return self._db.conexao()
-
 
 class UsuarioRepository(Repository):
     def buscar_por_id(self, usuario_id: int) -> Usuario | None:
-        row = self.con.execute("SELECT * FROM usuarios WHERE id = ?", (usuario_id,)).fetchone()
+        row = self._db.consultar_um("SELECT * FROM usuarios WHERE id = ?", (usuario_id,))
         return self._mapear(row) if row else None
 
     def buscar_por_login(self, login: str) -> Usuario | None:
-        row = self.con.execute(
-            "SELECT * FROM usuarios WHERE login = ? COLLATE NOCASE", (login,)
-        ).fetchone()
+        row = self._db.consultar_um("SELECT * FROM usuarios WHERE lower(login) = lower(?)", (login,))
         return self._mapear(row) if row else None
 
     @staticmethod
-    def _mapear(row: sqlite3.Row) -> Usuario:
+    def _mapear(row: dict) -> Usuario:
         return Usuario(
             id=row["id"], nome=row["nome"], login=row["login"],
             senha_hash=row["senha"], perfil=Perfil(row["perfil"]),
@@ -39,7 +32,7 @@ class UsuarioRepository(Repository):
 
 class SetorRepository(Repository):
     def listar(self) -> list[str]:
-        return [r["nome"] for r in self.con.execute("SELECT nome FROM setores ORDER BY nome")]
+        return [r["nome"] for r in self._db.consultar("SELECT nome FROM setores ORDER BY nome")]
 
 
 @dataclass
@@ -58,43 +51,47 @@ class ChamadoRepository(Repository):
     """
 
     def buscar_por_id(self, chamado_id: int) -> Chamado | None:
-        row = self.con.execute(self._SELECT + " WHERE c.id = ?", (chamado_id,)).fetchone()
+        row = self._db.consultar_um(self._SELECT + " WHERE c.id = ?", (chamado_id,))
         return self._mapear(row) if row else None
 
     def listar(self, filtro: FiltroChamados) -> list[Chamado]:
         where, params = self._where(filtro)
+        # Data (ISO) do mais recente para o mais antigo; no mesmo dia, o último aberto primeiro.
         sql = self._SELECT + where + " ORDER BY c.data DESC, c.id DESC"
-        return [self._mapear(r) for r in self.con.execute(sql, params)]
+        return [self._mapear(r) for r in self._db.consultar(sql, tuple(params))]
 
     def contar_por_status(self, filtro: FiltroChamados) -> dict[StatusChamado, int]:
         sem_status = FiltroChamados(filtro.usuario_id, filtro.data, filtro.setor, None)
         where, params = self._where(sem_status)
-        rows = self.con.execute(
-            f"SELECT c.status, COUNT(*) AS total FROM chamados c{where} GROUP BY c.status", params
+        rows = self._db.consultar(
+            f"SELECT c.status, COUNT(*) AS total FROM chamados c{where} GROUP BY c.status", tuple(params)
         )
         contagem = {s: 0 for s in StatusChamado}
         for r in rows:
-            contagem[StatusChamado(r["status"])] = r["total"]
+            contagem[StatusChamado(r["status"])] = int(r["total"])
         return contagem
 
     def inserir(self, chamado: Chamado) -> Chamado:
-        cur = self.con.execute(
+        chamado.id = self._db.inserir(
             """INSERT INTO chamados (usuario_id, data, setor, item, descricao, status, etiqueta)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (chamado.usuario_id, chamado.data.isoformat(), chamado.setor, chamado.item,
              chamado.descricao, chamado.status.value, chamado.etiqueta),
         )
-        self.con.commit()
-        chamado.id = cur.lastrowid
         return chamado
 
-    def atualizar_status(self, chamado_id: int, status: StatusChamado) -> None:
-        self.con.execute("UPDATE chamados SET status = ? WHERE id = ?", (status.value, chamado_id))
-        self.con.commit()
+    def atualizar_status(self, chamado_id: int, status: StatusChamado) -> bool:
+        return self._db.executar(
+            "UPDATE chamados SET status = ? WHERE id = ?", (status.value, chamado_id)
+        ) > 0
 
-    def excluir(self, chamado_id: int) -> None:
-        self.con.execute("DELETE FROM chamados WHERE id = ?", (chamado_id,))
-        self.con.commit()
+    def excluir_se_aberto(self, chamado_id: int) -> bool:
+        """Exclui só se ainda estiver em aberto — atômico, evita corrida com
+        uma alteração de status feita ao mesmo tempo pelo administrador."""
+        return self._db.executar(
+            "DELETE FROM chamados WHERE id = ? AND status = ?",
+            (chamado_id, StatusChamado.ABERTO.value),
+        ) > 0
 
     @staticmethod
     def _where(filtro: FiltroChamados) -> tuple[str, list]:
@@ -114,7 +111,7 @@ class ChamadoRepository(Repository):
         return (" WHERE " + " AND ".join(condicoes) if condicoes else ""), params
 
     @staticmethod
-    def _mapear(row: sqlite3.Row) -> Chamado:
+    def _mapear(row: dict) -> Chamado:
         return Chamado(
             id=row["id"], usuario_id=row["usuario_id"], data=date.fromisoformat(row["data"]),
             setor=row["setor"], item=row["item"], descricao=row["descricao"],

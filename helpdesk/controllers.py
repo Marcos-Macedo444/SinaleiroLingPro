@@ -8,7 +8,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from .models import StatusChamado
 from .repositories import SetorRepository
 from .security import SessaoUsuario
-from .services import AuthService, ChamadoService, RegraNegocioError, ValidacaoError
+from .services import AuthService, ChamadoService, RegraNegocioError, ValidacaoError, hoje
 
 
 class AuthController:
@@ -30,10 +30,14 @@ class AuthController:
             if usuario:
                 self.sessao.entrar(usuario)
                 destino = request.args.get("proximo", "")
-                return redirect(destino if destino.startswith("/") and not destino.startswith("//")
-                                else url_for("chamados.listar"))
+                return redirect(destino if self._destino_seguro(destino) else url_for("chamados.listar"))
             erro = "Login ou senha incorretos. Confira os dados e tente de novo."
         return render_template("auth/login.html", erro=erro, login=login), (401 if erro else 200)
+
+    @staticmethod
+    def _destino_seguro(destino: str) -> bool:
+        """Só aceita caminhos internos (evita redirecionar para outro site)."""
+        return destino.startswith("/") and not destino.startswith(("//", "/\\")) and "\\" not in destino
 
     def logout(self):
         self.sessao.sair()
@@ -74,7 +78,7 @@ class ChamadoController:
 
     def novo(self):
         usuario = self.sessao.atual()
-        dados = {"data": date.today().isoformat()}
+        dados = {"data": hoje().isoformat()}
         erros: dict[str, str] = {}
 
         if request.method == "POST":
@@ -89,7 +93,7 @@ class ChamadoController:
 
         return render_template(
             "chamados/novo.html", dados=dados, erros=erros, setores=self.setores.listar(),
-            hoje=date.today().isoformat(),
+            hoje=hoje().isoformat(),
         ), (422 if erros else 200)
 
     def cancelar(self, chamado_id: int):

@@ -984,3 +984,15 @@ body { padding-bottom: var(--estrada-h); }
 
 /* Fora do login a estrada é só decoração (o carro passa apenas no login). */
 .estrada-decorativa { cursor: default; pointer-events: none; }
+
+/* Aviso de banco temporário (só para o administrador) */
+.faixa-alerta {
+  max-width: 1240px; margin: 18px auto 0; padding: 11px 16px 9px 44px; position: relative;
+  background: #FFF4D4; border: 1px solid #F0D68A; border-radius: 8px; color: #6B4E00; font-size: 14.5px;
+  width: calc(100% - 48px);
+}
+.faixa-alerta::before { /* placa de atenção em losango */
+  content: ""; position: absolute; left: 17px; top: 50%; width: 13px; height: 13px; margin-top: -7px;
+  background: var(--amarelo); border: 2px solid var(--tinta); transform: rotate(45deg);
+}
+@media (max-width: 640px) { .faixa-alerta { width: calc(100% - 32px); } }

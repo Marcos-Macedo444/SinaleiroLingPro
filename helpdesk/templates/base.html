@@ -37,6 +37,13 @@
   </header>
   {% endif %}
 
+  {% if banco_temporario and usuario_logado and usuario_logado.is_admin %}
+  <div class="faixa-alerta" role="note">
+    <strong>Banco temporário.</strong> Os chamados podem sumir ou reaparecer entre acessos.
+    Conecte um banco Postgres na Vercel (aba Storage) para salvar de verdade.
+  </div>
+  {% endif %}
+
   {% with mensagens = get_flashed_messages(with_categories=true) %}
     {% if mensagens %}
     <div class="avisos" role="status" aria-live="polite">
